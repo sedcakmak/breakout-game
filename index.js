@@ -3,11 +3,12 @@ const ctx = canvas.getContext("2d");
 
 let x = canvas.width / 2;
 let y = canvas.height - 30;
-let dx = 2;
+let dx;
 let dy = -2;
 const ballRadius = 10;
 const paddleHeight = 10;
 const paddleWidth = 75;
+const paddleBottomMargin = 5;
 let paddleX = (canvas.width - paddleWidth) / 2;
 let rightPressed = false;
 let leftPressed = false;
@@ -17,9 +18,10 @@ let brickColumnCount = 5;
 let brickWidth = 75;
 let brickHeight = 20;
 let brickPadding = 10;
-let brickOffsetTop = 30;
+let brickOffsetTop = 40;
 let brickOffsetLeft = 30;
 let score = 0;
+let lives = 3;
 
 let bricks = [];
 for (let c = 0; c < brickColumnCount; c++) {
@@ -35,10 +37,14 @@ document.addEventListener("mousemove", mouseMoveHandler, false);
 
 function mouseMoveHandler(e) {
   var relativeX = e.clientX - canvas.offsetLeft;
-  if (relativeX > 0 && relativeX < canvas.width) {
+  if (
+    relativeX > paddleWidth / 2 &&
+    relativeX < canvas.width - paddleWidth / 2
+  ) {
     paddleX = relativeX - paddleWidth / 2;
   }
 }
+
 function keyDownHandler(e) {
   if (e.key == "Right" || e.key == "ArrowRight") {
     rightPressed = true;
@@ -72,7 +78,6 @@ function collisionDetection() {
           if (score == brickColumnCount * brickRowCount) {
             alert("YOU WIN, CONGRATULATIONS!");
             document.location.reload();
-            // clearInterval(interval);
           }
           generateRandomColor();
         }
@@ -82,9 +87,15 @@ function collisionDetection() {
 }
 
 function drawScore() {
-  ctx.font = "16px Arial";
+  ctx.font = "bold 16px Arial";
   ctx.fillStyle = "#0095DD";
   ctx.fillText(`Score: ${score}`, 8, 20);
+}
+
+function drawLives() {
+  ctx.font = "bold 16px Arial";
+  ctx.fillStyle = "#0095DD";
+  ctx.fillText(`Lives: ${lives}`, canvas.width - 69, 20);
 }
 
 function drawBall(ballColor) {
@@ -98,9 +109,12 @@ function draw(ballColor) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   randomColor ? (ballColor = randomColor) : (ballColor = "0095DD");
   drawBricks();
+
   drawBall(ballColor);
+
   drawPaddle();
   drawScore();
+  drawLives();
   collisionDetection();
   x += dx;
   y += dy;
@@ -112,16 +126,30 @@ function draw(ballColor) {
 
   if (y + dy < ballRadius) {
     dy = -dy;
-  } else if (y + dy > canvas.height - ballRadius) {
+    // added paddleHeight and paddleBottomMargin so that the ball doesn't halfway go into the paddle
+  } else if (
+    y + dy >
+    canvas.height - ballRadius - paddleHeight - paddleBottomMargin
+  ) {
     if (x > paddleX && x < paddleX + paddleWidth) {
+      generateBallAngle();
+
       //increase the speed of the ball by 0.5 each time it touches the paddle
-      // dy += 0.5;
+      dy += 0.5;
       dy = -dy;
       generateRandomColor();
     } else {
-      alert("GAME OVER");
-      document.location.reload();
-      clearInterval(interval);
+      lives--;
+      if (!lives) {
+        alert("GAME OVER");
+        document.location.reload();
+      } else {
+        x = canvas.width / 2;
+        y = canvas.height - 30;
+        generateBallAngle();
+        dy = -2;
+        paddleX = (canvas.width - paddleWidth) / 2;
+      }
     }
   }
 
@@ -133,15 +161,28 @@ function draw(ballColor) {
     paddleX -= 7;
     if (paddleX < 0) paddleX = 0;
   }
+
+  requestAnimationFrame(draw);
 }
 
 function generateRandomColor() {
   randomColor = Math.floor(Math.random() * 16777215).toString(16);
 }
 
+function generateBallAngle() {
+  let randomBallAngle = [-2, 2];
+  dx = randomBallAngle[Math.floor(Math.random() * randomBallAngle.length)];
+}
+generateBallAngle();
+
 function drawPaddle() {
   ctx.beginPath();
-  ctx.rect(paddleX, canvas.height - paddleHeight, paddleWidth, paddleHeight);
+  ctx.rect(
+    paddleX,
+    canvas.height - paddleBottomMargin - paddleHeight,
+    paddleWidth,
+    paddleHeight
+  );
   ctx.fillStyle = "#0095DD";
   ctx.fill();
   ctx.closePath();
@@ -165,4 +206,4 @@ function drawBricks() {
   }
 }
 
-let interval = setInterval(draw, 10);
+draw();

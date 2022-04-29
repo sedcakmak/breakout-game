@@ -4,8 +4,10 @@
 }
 
 canvas {
-  background: #eee;
+  background: #f3f2dc;
   display: block;
   margin: 40px auto;
   border: 1px solid black;
+  border-radius: 8px;
+  /* cursor: none; */
 }
